@@ -1,0 +1,10 @@
+name: "Web Audit Report"
+description: "Generate audit reports for web applications with npm, bun, pnpm, yarn."
+inputs:
+  runtime:
+    description: "Runtime to execute report audit, values: npm | bun | pnpm | yarn"
+    required: true
+    default: "npm"
+runs:
+  using: "docker"
+  image: "Dockerfile"
