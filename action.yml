@@ -1,10 +1,32 @@
-name: "Web Audit Report"
-description: "Generate audit reports for web applications with npm, bun, pnpm, yarn."
+name: 'Web Audit Report'
+description: 'Genera un reporte de auditoría usando npm audit y lo publica'
+author: 'ElJijuna'
 inputs:
   runtime:
-    description: "Runtime to execute report audit, values: npm | bun | pnpm | yarn"
+    description: 'Runtime: npm | bun | pnpm | yarn'
     required: true
-    default: "npm"
+    default: 'npm'
+  report_name:
+    description: 'Nombre base del archivo de reporte'
+    required: true
+    default: 'react-base-app'
 runs:
-  using: "docker"
-  image: "Dockerfile"
+  using: 'composite'
+  steps:
+    - name: 📥 Clonar el repositorio
+      uses: actions/checkout@v3
+
+    - name: 🔧 Instalar dependencias
+      run: npm ci
+      shell: bash
+
+    - name: 🧨 Ejecutar script
+      run: |
+        curl https://raw.githubusercontent.com/ElJijuna/Bash-Scripts/main/web-audit-report.sh | bash -s ${{ inputs.runtime }} ${{ inputs.report_name }}
+      shell: bash
+
+    - name: 📦 Guardar reporte
+      uses: actions/upload-artifact@v4
+      with:
+        name: audit-report
+        path: ${{ inputs.report_name }}--web-audit.json
