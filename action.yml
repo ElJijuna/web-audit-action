@@ -6,10 +6,9 @@ inputs:
     description: 'Runtime: npm | bun | pnpm | yarn'
     required: true
     default: 'npm'
-  report_name:
-    description: 'Nombre base del archivo de reporte'
+  token:
+    description: 'Token para hacer push al repositorio destino (MonitoringTool-DB)'
     required: true
-    default: 'react-base-app'
 runs:
   using: 'composite'
   steps:
@@ -17,16 +16,53 @@ runs:
       uses: actions/checkout@v3
 
     - name: 🔧 Instalar dependencias
-      run: npm ci
-      shell: bash
-
-    - name: 🧨 Ejecutar script
       run: |
-        curl https://raw.githubusercontent.com/ElJijuna/Bash-Scripts/main/web-audit-report.sh | bash -s ${{ inputs.runtime }} ${{ inputs.report_name }}
+        if [ "${{ inputs.runtime }}" = "npm" ]; then
+          npm ci
+        elif [ "${{ inputs.runtime }}" = "bun" ]; then
+          bun install
+        elif [ "${{ inputs.runtime }}" = "pnpm" ]; then
+          pnpm install
+        elif [ "${{ inputs.runtime }}" = "yarn" ]; then
+          yarn install
+        else
+          echo "Runtime inválido: ${{ inputs.runtime }}"
+          exit 1
+        fi
       shell: bash
 
-    - name: 📦 Guardar reporte
+    - name: 🧨 Ejecutar Script de auditoría
+      shell: bash
+      run: |
+        curl https://raw.githubusercontent.com/ElJijuna/Bash-Scripts/refs/heads/main/web-audit-report.sh | bash -s ${{ inputs.runtime }} ${{ github.repository }}
+
+    - name: 📂 Verificar contenido del repo
+      shell: bash
+      run: ls -l
+
+    - name: 📦 Subir reporte
       uses: actions/upload-artifact@v4
       with:
         name: audit-report
-        path: ${{ inputs.report_name }}--web-audit.json
+        path: ${{ github.repository }}--web-audit.json
+
+    - name: 📥 Clonar MonitoringTool-DB
+      shell: bash
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git clone --depth 1 https://x-access-token:${{ inputs.token }}@github.com/${{ github.repository_owner }}/MonitoringTool-DB.git monitoring
+
+    - name: 📥 Descargar artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: audit-report
+        path: ./monitoring
+
+    - name: ✅ Commit & Push
+      shell: bash
+      run: |
+        cd monitoring
+        git add .
+        git commit -m "📊 Update audit report"
+        git push
