@@ -34,7 +34,7 @@ runs:
     - name: 🧨 Ejecutar Script de auditoría
       shell: bash
       run: |
-        curl https://raw.githubusercontent.com/ElJijuna/Bash-Scripts/refs/heads/main/web-audit-report.sh | bash -s ${{ inputs.runtime }} ${{ github.repository }}
+        curl https://raw.githubusercontent.com/ElJijuna/Bash-Scripts/refs/heads/main/web-audit-report.sh | bash -s ${{ inputs.runtime }} ${{ github.event.repository.name }}
 
     - name: 📂 Verificar contenido del repo
       shell: bash
@@ -44,7 +44,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: audit-report
-        path: ${{ github.repository }}--web-audit.json
+        path: ${{ github.event.repository.name }}--web-audit.json
 
     - name: 📥 Clonar MonitoringTool-DB
       shell: bash
