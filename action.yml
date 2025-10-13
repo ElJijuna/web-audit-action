@@ -1,6 +1,9 @@
 name: 'Web Audit Report'
 description: 'Genera un reporte de auditoría usando npm audit y lo publica'
 author: 'ElJijuna'
+branding:
+  icon: 'bar-chart'
+  color: 'blue'    
 inputs:
   runtime:
     description: 'Runtime: npm | bun | pnpm | yarn'
