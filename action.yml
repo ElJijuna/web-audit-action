@@ -1,24 +1,28 @@
 name: 'Web Audit Report'
-description: 'Genera un reporte de auditoría usando npm audit y lo publica'
+description: 'Generates a web audit report using npm audit (or equivalent) and publishes it'
 author: 'ElJijuna'
 branding:
   icon: 'bar-chart'
-  color: 'blue'    
+  color: 'blue'
 inputs:
   runtime:
-    description: 'Runtime: npm | bun | pnpm | yarn'
-    required: true
+    description: 'Package manager: npm | bun | pnpm | yarn'
+    required: false
     default: 'npm'
   token:
-    description: 'Token para hacer push al repositorio destino (MonitoringTool-DB)'
+    description: 'Token to push to the destination repository (MonitoringTool-DB)'
     required: true
 runs:
   using: 'composite'
   steps:
-    - name: 📥 Clonar el repositorio
-      uses: actions/checkout@v3
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
 
-    - name: 🔧 Instalar dependencias
+    - name: 🏷️ Set report name
+      shell: bash
+      run: echo "REPORT_NAME=GH-${{ github.repository_owner }}-${{ github.event.repository.name }}" >> "$GITHUB_ENV"
+
+    - name: 🔧 Install dependencies
       run: |
         if [ "${{ inputs.runtime }}" = "npm" ]; then
           npm ci
@@ -29,34 +33,35 @@ runs:
         elif [ "${{ inputs.runtime }}" = "yarn" ]; then
           yarn install
         else
-          echo "Runtime inválido: ${{ inputs.runtime }}"
+          echo "Invalid runtime: ${{ inputs.runtime }}"
           exit 1
         fi
       shell: bash
 
-    - name: 🧨 Ejecutar Script de auditoría
+    - name: 🧨 Run audit script
       shell: bash
       run: |
-        curl https://raw.githubusercontent.com/ElJijuna/Bash-Scripts/refs/heads/main/web-audit-report.sh | bash -s ${{ inputs.runtime }} ${{ github.event.repository.name }}
+        set -euo pipefail
+        curl -fsSL https://raw.githubusercontent.com/ElJijuna/Bash-Scripts/refs/heads/main/web-audit-report.sh | bash -s ${{ inputs.runtime }} ${{ env.REPORT_NAME }}
 
-    - name: 📂 Verificar contenido del repo
+    - name: 📂 Verify repo contents
       shell: bash
       run: ls -l
 
-    - name: 📦 Subir reporte
+    - name: 📦 Upload report
       uses: actions/upload-artifact@v4
       with:
         name: audit-report
-        path: ${{ github.event.repository.name }}--web-audit.json
+        path: ${{ env.REPORT_NAME }}--web-audit.json
 
-    - name: 📥 Clonar MonitoringTool-DB
+    - name: 📥 Clone MonitoringTool-DB
       shell: bash
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git clone --depth 1 https://x-access-token:${{ inputs.token }}@github.com/${{ github.repository_owner }}/MonitoringTool-DB.git monitoring
 
-    - name: 📥 Descargar artifact
+    - name: 📥 Download artifact
       uses: actions/download-artifact@v4
       with:
         name: audit-report
@@ -67,5 +72,10 @@ runs:
       run: |
         cd monitoring
         git add .
-        git commit -m "📊 Update audit report"
-        git push
+        if git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "📊 Update audit report"
+          git pull --rebase
+          git push
+        fi
