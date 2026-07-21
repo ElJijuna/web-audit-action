@@ -12,6 +12,10 @@ inputs:
   token:
     description: 'Token to push to the destination repository (MonitoringTool-DB)'
     required: true
+  db_repo:
+    description: 'Name of the destination repository (owned by the same account as the consumer repo) that reports are pushed to'
+    required: false
+    default: 'MonitoringTool-DB'
 runs:
   using: 'composite'
   steps:
@@ -57,15 +61,15 @@ runs:
     - name: ⚠️ Skip publish (no token)
       if: ${{ inputs.token == '' }}
       shell: bash
-      run: echo "::notice::No 'token' input provided — skipping publish to MonitoringTool-DB. Report was generated and uploaded as a workflow artifact only."
+      run: echo "::notice::No 'token' input provided — skipping publish to ${{ inputs.db_repo }}. Report was generated and uploaded as a workflow artifact only."
 
-    - name: 📥 Clone MonitoringTool-DB
+    - name: 📥 Clone destination repository
       if: ${{ inputs.token != '' }}
       shell: bash
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git clone --depth 1 https://x-access-token:${{ inputs.token }}@github.com/${{ github.repository_owner }}/MonitoringTool-DB.git monitoring
+        git clone --depth 1 https://x-access-token:${{ inputs.token }}@github.com/${{ github.repository_owner }}/${{ inputs.db_repo }}.git monitoring
 
     - name: 📥 Download artifact
       if: ${{ inputs.token != '' }}
