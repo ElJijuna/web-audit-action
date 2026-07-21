@@ -1,0 +1,7 @@
+{
+  "name": "web-audit-action-test-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal fixture so the self-test workflow (test.yml) has a valid lockfile for `npm ci`. Not application code.",
+  "dependencies": {}
+}
