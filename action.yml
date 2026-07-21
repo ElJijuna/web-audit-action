@@ -54,7 +54,13 @@ runs:
         name: audit-report
         path: ${{ env.REPORT_NAME }}--web-audit.json
 
+    - name: ⚠️ Skip publish (no token)
+      if: ${{ inputs.token == '' }}
+      shell: bash
+      run: echo "::notice::No 'token' input provided — skipping publish to MonitoringTool-DB. Report was generated and uploaded as a workflow artifact only."
+
     - name: 📥 Clone MonitoringTool-DB
+      if: ${{ inputs.token != '' }}
       shell: bash
       run: |
         git config --global user.name "github-actions[bot]"
@@ -62,12 +68,14 @@ runs:
         git clone --depth 1 https://x-access-token:${{ inputs.token }}@github.com/${{ github.repository_owner }}/MonitoringTool-DB.git monitoring
 
     - name: 📥 Download artifact
+      if: ${{ inputs.token != '' }}
       uses: actions/download-artifact@v4
       with:
         name: audit-report
         path: ./monitoring
 
     - name: ✅ Commit & Push
+      if: ${{ inputs.token != '' }}
       shell: bash
       run: |
         cd monitoring
